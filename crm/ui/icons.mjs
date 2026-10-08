@@ -1,4 +1,5 @@
 const paths={
+  orcamentos:['M6 3h12v18H6z','M9 7h6','M9 11h1','M14 11h1','M9 15h1','M14 15h1','M9 18h6'],
   hoje:['M3 3h7v7H3z','M14 3h7v7h-7z','M3 14h7v7H3z','M14 14h7v7h-7z'],
   clientes:['M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2','M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8','M17 4a4 4 0 0 1 0 7','M22 21v-2a4 4 0 0 0-3-3.87'],
   pipeline:['M3 4h5v16H3z','M10 4h5v10h-5z','M17 4h4v13h-4z'],
