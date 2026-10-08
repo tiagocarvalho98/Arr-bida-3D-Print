@@ -1,0 +1,11 @@
+import {el,link,badge,panel,date,empty} from '../ui/dom.mjs';import {selectToday} from '../domain/selectors.mjs';import {localDate} from '../domain/model.mjs';
+import {icon} from '../ui/icons.mjs';
+export function render({state:s,now}){
+  const view=selectToday(s,localDate(now()));
+  const stat=(label,value,href,foot)=>link(el('div',{},el('div',{class:'metric-top'},el('span',{class:'metric-label'},label),el('span',{class:'metric-icon'},icon(href.slice(1)))),el('strong',{class:'metric-value'},value),el('div',{class:'metric-bottom'},el('span',{class:'metric-foot'},foot),icon('arrow'))),href,'metric');
+  const rows=view.upcoming.map(o=>el('div',{class:'work-row'},el('div',{},link(o.title,`#encomenda/${o.id}`,'row-title'),el('p',{class:'muted small'},s.clients.find(c=>c.id===o.clientId)?.name)),badge(o.status),el('span',{class:'date'},date(o.dueDate))));
+  const tasks=view.openTasks.slice(0,5).map(t=>{const job=s.jobs.find(j=>j.id===t.jobId);return el('div',{class:'task-row'},el('span',{class:`task-dot ${t.status}`}),el('div',{},link(t.title,`#encomenda/${job?.orderId}`,'row-title'),el('p',{class:'small muted'},date(t.dueDate))),badge(t.status));});
+  return el('div',{class:'today-view'},el('section',{class:'welcome'},el('div',{},el('p',{class:'eyebrow'},'Visão do estúdio'),el('h2',{},'Tudo no seu lugar.'),el('p',{},'O que precisa da tua atenção, hoje.')),link(el('span',{},'Acompanhar produção',icon('arrow')),'#pipeline','welcome-action')),
+    el('div',{class:'metrics'},stat('Encomendas ativas',view.activeOrders.length,'#pipeline','A acompanhar'),stat('Tarefas pendentes',view.openTasks.length,'#tarefas',`${view.overdueTasks.length} com prazo ultrapassado`),stat('Para aprovação',view.approvals.length,'#pipeline','Antes da produção'),stat('Stock baixo',view.lowStock.length,'#filamentos','Filamentos a repor')),
+    el('div',{class:'dashboard-grid'},panel('Próximas entregas',rows.length?rows:empty()),el('div',{class:'stack'},panel('Na tua lista',tasks.length?tasks:empty('Tudo em dia.')),panel('Atenção ao material',view.lowStock.length?view.lowStock.map(l=>link(el('div',{class:'alert-row'},el('span',{},`${l.material} · ${l.color}`),el('span',{},'Ver stock ↗')),'#filamentos')):empty('Stock sem alertas.')))));
+}
