@@ -6,7 +6,7 @@ import {reveal} from '../ui/motion.mjs';
 
 export function render({state:s,now}) {
   const summary=selectToday(s,localDate(now()));
-  const stages=['new','quote','approval','production','ready'];
+  const stages=['new','accepted','quote','approval','production','ready'];
   let selected=summary.activeOrders.find(o=>o.status==='production')||summary.activeOrders[0];
   let filter='all';
   const inspector=el('section',{class:'production-inspector','aria-label':'Encomenda selecionada'});

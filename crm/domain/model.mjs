@@ -1,5 +1,6 @@
+import {OPTIONAL_STEPS} from './workflow.mjs';
 import {validateConfiguration} from '../../scripts/products.mjs';
-export const ORDER_STATES={new:'Novo pedido',quote:'Orçamento',approval:'Aprovação',production:'Produção',ready:'Pronto',delivered:'Entregue',cancelled:'Cancelado'};
+export const ORDER_STATES={new:'Por aceitar',accepted:'Aceite',quote:'Orçamento',approval:'Aprovação',production:'Produção',ready:'Pronto',delivered:'Entregue',cancelled:'Cancelado'};
 export const TASK_STATES={pending:'Em pedido',active:'Em curso',done:'Concluída'};
 export const JOB_STATES={pending:'Por iniciar',active:'Em produção',completed:'Concluído',failed:'Falhou',cancelled:'Cancelado'};
 export function requireThat(condition,message){if(!condition)throw new Error(message);}
@@ -20,6 +21,13 @@ export function validateState(s){
     requireThat(s.users.some(u=>u.id==='user-demo')&&s.users.every(u=>typeof u.name==='string'&&u.name.trim()&&u.role==='admin'),'Conta de demonstração inválida.');
     for(const c of s.clients)requireThat(typeof c.name==='string'&&c.name.trim()&&['business','person'].includes(c.type),'Cliente inválido.');
     for(const o of s.orders){
+      if(o.route!==undefined){
+        requireThat(Array.isArray(o.route)&&o.route.length>=2&&o.route[0]==='accepted'&&o.route.at(-1)==='delivered','Percurso inválido.');
+        const middle=o.route.slice(1,-1);
+        requireThat(new Set(middle).size===middle.length&&middle.every(k=>OPTIONAL_STEPS.includes(k))&&JSON.stringify(middle)===JSON.stringify(OPTIONAL_STEPS.filter(k=>middle.includes(k))),'Ordem de etapas inválida.');
+        requireThat((o.status==='cancelled'||o.route.includes(o.status))&&has('users',o.acceptedBy)&&typeof o.acceptedAt==='string'&&Number.isFinite(Date.parse(o.acceptedAt)),'Aceitação inválida.');
+        requireThat(o.artRequired===o.route.includes('approval')&&(o.pricingMode==='quote')===o.route.includes('quote'),'Percurso e requisitos inconsistentes.');
+      }else requireThat(o.status!=='accepted','Falta definir o percurso.');
       requireThat(typeof o.artRequired==='boolean'&&typeof o.artApproved==='boolean','Estado de aprovação inválido.');
       requireThat(has('clients',o.clientId)&&Object.hasOwn(ORDER_STATES,o.status)&&owner(o.assigneeId)&&dateValid(o.dueDate),'Encomenda inválida.');
       requireThat(typeof o.title==='string'&&o.title.trim()&&['known','quote'].includes(o.pricingMode)&&Array.isArray(o.lines)&&o.lines.length>0,'Linhas de encomenda inválidas.');
