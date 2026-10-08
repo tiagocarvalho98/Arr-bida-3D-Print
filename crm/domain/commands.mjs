@@ -1,3 +1,5 @@
+import {hasCatalogPrice} from './catalog-pricing.mjs';
+import {estimateQuote} from './quotation.mjs';
 import {requireThat,text,validateState,TASK_STATES,ORDER_STATES,dateValid} from './model.mjs';
 import {inventoryCommand} from './inventory.mjs';
 import {validateConfiguration} from '../../scripts/products.mjs';
@@ -22,19 +24,32 @@ export function applyCommand(state,command){
       const order=p.id?s.orders.find(x=>x.id===p.id):{id:c.id,status:'new',artApproved:false};requireThat(order,'Encomenda não encontrada.');
       requireThat(['new','accepted','quote','approval'].includes(order.status),'As linhas ficam fechadas ao iniciar produção.');
       const lines=p.lines.map((l,i)=>({id:`${order.id}-line-${i}`,productId:l.productId,configuration:structuredClone(l.configuration)}));
-      const changed=JSON.stringify(lines)!==JSON.stringify(order.lines);
+      const content=rows=>(rows||[]).map(({productId,configuration})=>({productId,configuration:Object.fromEntries(Object.entries(configuration).sort(([a],[b])=>a.localeCompare(b)))}));
+      const changed=JSON.stringify(content(lines))!==JSON.stringify(content(order.lines));
+      requireThat(!(changed&&order.quotation?.status==='approved'),'As linhas de um orçamento aprovado não podem ser alteradas.');
+      if(changed)delete order.quotation;
       Object.assign(order,{clientId:p.clientId,title:text(p.title,120),pricingMode:p.pricingMode,artRequired:Boolean(p.artRequired),dueDate:p.dueDate||'',assigneeId:p.assigneeId||null,notes:text(p.notes),lines});if(order.route){order.artRequired=order.route.includes('approval');order.pricingMode=order.route.includes('quote')?'quote':'known';}if(changed)order.artApproved=false;
       if(!p.id){s.orders.push(order);s.jobs.push({id:`${c.id}-job`,orderId:c.id,title:`Produção · ${order.title}`,status:'pending',parentJobId:null,consumptionConfirmed:false});}
     }else if(c.type==='order.accept'){
       const o=s.orders.find(x=>x.id===p.id);requireThat(o&&o.status==='new'&&!o.route,'Esta encomenda já foi aceite ou encerrada.');
       requireThat(Array.isArray(p.steps)&&new Set(p.steps).size===p.steps.length&&p.steps.every(k=>OPTIONAL_STEPS.includes(k)),'Escolhe etapas válidas, sem repetições.');
-      o.route=['accepted',...OPTIONAL_STEPS.filter(k=>p.steps.includes(k)),'delivered'];
+      const steps=p.steps.filter(k=>k!=='quote'||!hasCatalogPrice(o));
+      o.route=['accepted',...OPTIONAL_STEPS.filter(k=>steps.includes(k)),'delivered'];
       o.status='accepted';o.acceptedBy=c.actorId;o.acceptedAt=c.at;
-      o.artRequired=p.steps.includes('approval');o.pricingMode=p.steps.includes('quote')?'quote':'known';
+      o.artRequired=steps.includes('approval');o.pricingMode=steps.includes('quote')?'quote':'known';
+    }else if(c.type==='quote.submit'){
+      const o=s.orders.find(x=>x.id===p.id);requireThat(o&&o.status==='quote','A encomenda tem de estar na etapa Orçamento.');
+      o.quotation={...estimateQuote(s,p),status:'pending',submittedBy:c.actorId,submittedAt:c.at};
+    }else if(c.type==='quote.approve'){
+      const o=s.orders.find(x=>x.id===p.id);requireThat(o&&o.status==='quote'&&o.quotation?.status==='pending','Não existe um orçamento pendente de aprovação.');
+      const next=nextStages(o).find(k=>k!=='cancelled');requireThat(next,'Não existe próxima etapa no percurso.');
+      requireThat(next!=='production'||!o.artRequired||o.artApproved,'Aprova a arte antes da produção.');
+      o.quotation.status='approved';o.quotation.approvedBy=c.actorId;o.quotation.approvedAt=c.at;o.status=next;
     }else if(c.type==='order.approveArt'){
       const o=s.orders.find(x=>x.id===p.id);requireThat(o&&['new','quote','approval'].includes(o.status),'A arte já não pode ser alterada nesta etapa.');o.artApproved=true;
     }else if(c.type==='order.transition'){
       const o=s.orders.find(x=>x.id===p.id);requireThat(o&&transitionOptions(o).includes(p.status),'Transição não permitida.');
+      requireThat(o.status!=='quote'||p.status==='cancelled','Aprova o orçamento na subetapa Aprovar Orçamento para avançar.');
       if(p.status!=='cancelled'&&(o.status==='approval'||p.status==='production'))requireThat(!o.artRequired||o.artApproved,'Aprova a arte antes da produção.');
       if((o.status==='production'&&p.status!=='cancelled')||(!o.route&&p.status==='ready')){const jobs=s.jobs.filter(j=>j.orderId===o.id);const resolved=j=>j.status==='completed'||j.status==='cancelled'||j.status==='failed'&&jobs.some(child=>child.parentJobId===j.id&&resolved(child));requireThat(jobs.some(j=>j.status==='completed')&&jobs.every(resolved),'Conclui a produção ou resolve os trabalhos falhados primeiro.');}
       o.status=p.status;
@@ -45,7 +60,7 @@ export function applyCommand(state,command){
     }else if(c.type==='task.transition'){
       const task=s.tasks.find(t=>t.id===p.id);requireThat(task&&Object.hasOwn(TASK_STATES,p.status),'Estado de tarefa inválido.');task.status=p.status;
     }else throw new Error('Operação desconhecida.');
-    s.revision++;s.processedCommands.push(c.id);s.history.push({id:`history-${c.id}`,entityId,actorId:c.actorId,at:c.at,description:({ 'client.save':'Cliente guardado','order.save':'Encomenda guardada','order.accept':'Encomenda aceite; percurso: '+orderRoute(s.orders.find(o=>o.id===p.id)||{}).map(k=>ORDER_STATES[k]).join(' → '),'order.approveArt':'Arte aprovada','order.transition':`Etapa alterada para ${ORDER_STATES[p.status]}`,'task.save':'Tarefa guardada','task.transition':`Tarefa «${s.tasks.find(t=>t.id===p.id)?.title}»: ${TASK_STATES[p.status]}`,'lot.add':'Lote recebido','job.start':'Material reservado e trabalho iniciado','job.confirmConsumption':'Consumo real confirmado','job.cancel':'Trabalho cancelado; reservas libertadas','job.reprint':'Reimpressão criada'})[c.type]});
+    s.revision++;s.processedCommands.push(c.id);s.history.push({id:`history-${c.id}`,entityId,actorId:c.actorId,at:c.at,description:({ 'quote.submit':'Orçamento enviado para aprovação','quote.approve':'Orçamento aprovado; encomenda avançou para a próxima etapa','client.save':'Cliente guardado','order.save':'Encomenda guardada','order.accept':'Encomenda aceite; percurso: '+orderRoute(s.orders.find(o=>o.id===p.id)||{}).map(k=>ORDER_STATES[k]).join(' → '),'order.approveArt':'Arte aprovada','order.transition':`Etapa alterada para ${ORDER_STATES[p.status]}`,'task.save':'Tarefa guardada','task.transition':`Tarefa «${s.tasks.find(t=>t.id===p.id)?.title}»: ${TASK_STATES[p.status]}`,'lot.add':'Lote recebido','job.start':'Material reservado e trabalho iniciado','job.confirmConsumption':'Consumo real confirmado','job.cancel':'Trabalho cancelado; reservas libertadas','job.reprint':'Reimpressão criada'})[c.type]});
     const valid=validateState(s);requireThat(valid.ok,valid.message);return {ok:true,state:s};
   }catch(e){return {ok:false,code:'invalid',message:e.message};}
 }

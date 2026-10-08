@@ -1,3 +1,4 @@
+import {validQuotation} from './quotation.mjs';
 import {OPTIONAL_STEPS} from './workflow.mjs';
 import {validateConfiguration} from '../../scripts/products.mjs';
 export const ORDER_STATES={new:'Por aceitar',accepted:'Aceite',quote:'Orçamento',approval:'Aprovação',production:'Produção',ready:'Pronto',delivered:'Entregue',cancelled:'Cancelado'};
@@ -21,6 +22,7 @@ export function validateState(s){
     requireThat(s.users.some(u=>u.id==='user-demo')&&s.users.every(u=>typeof u.name==='string'&&u.name.trim()&&u.role==='admin'),'Conta de demonstração inválida.');
     for(const c of s.clients)requireThat(typeof c.name==='string'&&c.name.trim()&&['business','person'].includes(c.type),'Cliente inválido.');
     for(const o of s.orders){
+      if(o.quotation!==undefined){requireThat(validQuotation(o.quotation,s),'Orçamento inválido.');requireThat(o.quotation.status!=='pending'||['quote','cancelled'].includes(o.status),'Orçamento pendente fora da etapa correta.');}
       if(o.route!==undefined){
         requireThat(Array.isArray(o.route)&&o.route.length>=2&&o.route[0]==='accepted'&&o.route.at(-1)==='delivered','Percurso inválido.');
         const middle=o.route.slice(1,-1);

@@ -1,7 +1,16 @@
-﻿# Orçamentos e consulta de encomendas — 2026-10-08
+﻿# Orçamentação e aprovação — 2026-10-08
 
-Orçamentos mostra exclusivamente encomendas existentes com status quote (etapa Orçamento). Sem criação nesta secção. Seleção independente do head; pedidos ainda não aceites ou noutras etapas não aparecem.
+## Fluxo
+Apenas encomendas na etapa Orçamento aparecem nesta área. Clicar no título/Orçamentar abre o pop-up. Seleção de lote com stock disponível, gramas previstas, horas e minutos, custo por hora preenchido para esse orçamento e valor final independente dos custos. A estimativa cobre a encomenda completa.
 
-Nova secção #encomendas: lista de todas as encomendas, incluindo entregues e canceladas, com cliente, head, prazo e estado. Pesquisa e filtro de estado. Cada linha abre um diálogo exclusivamente informativo com estado, cliente/contacto/cidade, head, prazo, percurso, aceitação, notas, produtos/personalização e tarefas. Não contém campos editáveis, ações de gravação ou ligações para editar.
+Enviar para aprovação guarda snapshot de preço do filamento, duração, taxa horária, custos e valor final. Não reserva nem consome stock. Subetapa Aprovar Orçamento na área Orçamentos e na coluna Orçamento da pipeline: cliente/empresa, projeto, custos de material e tempo, valor final destacado, head e Aprovar. Aprovar regista ator/data e avança automaticamente para a próxima etapa escolhida. A transição manual genérica não permite contornar a aprovação.
 
-Validação browser: sete encomendas; diálogo sem input/select/textarea e apenas botões de fecho; Escape restitui foco à linha; conteúdo localStorage idêntico antes/depois da consulta; viewport 390 px sem overflow. Orçamentos sem botão de criação e apenas cartões na etapa Orçamento. Teste de seleção atualizado passou.
+Uma alteração às linhas invalida o orçamento pendente; linhas com orçamento aprovado ficam protegidas. Alterações de notas, prazo ou head preservam os valores. O orçamento aprovado permanece no detalhe do projeto e no pop-up informativo de Encomendas.
+
+## Catálogo mock
+Preços ilustrativos do CRM em domain/catalog-pricing.mjs: Produto 1 sem preço; Produto 2 15 €/unidade; Produto 3 5 €/unidade. Não são preços comerciais nem alteram as páginas públicas. Na aceitação, todas as linhas com preço definido removem a etapa Orçamento; pedidos mistos/custom mantêm a opção. Encomendas anteriores já em curso não são reclassificadas.
+
+## Verificação
+40 testes Node passaram, incluindo 8 de orçamento (cálculos, stock inalterado, aprovação obrigatória, avanço, preços fixos/mistos, valores inválidos, snapshots e edição de metadados). Browser em sessão isolada: 100 g a 20 €/kg + 90 min a 10 €/h = 2 € material + 15 € tempo; valor final 45 €. Aprovar avançou para aprovação de arte, sem movimentos adicionais. Persistência após reload, ausência da opção Orçamento para produto fixo, pop-up sem overflow a 390 px e consulta sem campos editáveis verificados. Revisão independente identificou comparação de IDs nas linhas; corrigida e coberta por teste.
+
+Capturas quotation-approval.png e quotation-mobile.png. Dados continuam mock locais; sem autenticação real nem sincronização entre browsers.
