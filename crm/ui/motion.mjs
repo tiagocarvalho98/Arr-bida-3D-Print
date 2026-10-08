@@ -1,6 +1,6 @@
 let pointer=false;
 document.addEventListener('pointerdown',()=>{pointer=true;document.documentElement.dataset.input='pointer';},true);
-document.addEventListener('keydown',()=>{pointer=false;document.documentElement.dataset.input='keyboard';document.querySelectorAll('.view,dialog,#announcement').forEach(n=>n.getAnimations().forEach(a=>a.cancel()));},true);
+document.addEventListener('keydown',()=>{pointer=false;document.documentElement.dataset.input='keyboard';document.querySelectorAll('.view,dialog,#announcement,.production-inspector,.production-flow').forEach(n=>n.getAnimations().forEach(a=>a.cancel()));},true);
 export function reveal(node,kind='view'){
   if(!node||!pointer||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
   node.getAnimations().forEach(a=>a.cancel());
