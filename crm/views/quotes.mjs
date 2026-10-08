@@ -1,7 +1,7 @@
-import {el,button,toolbar,link,badge,date,owner,empty} from '../ui/dom.mjs';
+import {el,toolbar,link,badge,date,owner,empty} from '../ui/dom.mjs';
 import {icon} from '../ui/icons.mjs';
 import {selectQuotes} from '../domain/quotes.mjs';
-import {editOrder} from './order.mjs';
+
 export function render(ctx){
   const s=ctx.state,grid=el('div',{class:'quotes-grid'}),count=el('p',{class:'muted small','aria-live':'polite'});
   const draw=(query='')=>{
@@ -14,5 +14,5 @@ export function render(ctx){
     if(!orders.length)grid.append(empty('Sem projetos em orçamentação nesta seleção.'));
   };
   draw();
-  return el('div',{class:'stack'},el('div',{class:'operations-heading'},el('div',{},el('h2',{},'Dar forma ao próximo trabalho.'),el('p',{class:'muted'},'Orçamentos da equipa. O head coordena; todos os colaboradores podem consultar.'))),toolbar('Pesquisar projeto, cliente ou head',draw,[button('+ Novo orçamento',()=>editOrder(ctx,{pricingMode:'quote'}))]),count,grid);
+  return el('div',{class:'stack'},el('div',{class:'operations-heading'},el('div',{},el('h2',{},'Dar forma ao próximo trabalho.'),el('p',{class:'muted'},'Orçamentos da equipa. O head coordena; todos os colaboradores podem consultar.'))),toolbar('Pesquisar projeto, cliente ou head',draw),count,grid);
 }

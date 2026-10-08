@@ -1,8 +1,9 @@
+import * as ordersList from './views/orders-list.mjs';
 import * as quotes from './views/quotes.mjs';
 import {createStore} from './data/store.mjs';import {el,button,link,notice} from './ui/dom.mjs';import {openDialog} from './ui/dialog.mjs';
 import {icon} from './ui/icons.mjs';import {reveal} from './ui/motion.mjs';
 import * as today from './views/today.mjs';import * as clients from './views/clients.mjs';import * as pipeline from './views/pipeline.mjs';import * as order from './views/order.mjs';import * as tasks from './views/tasks.mjs';import * as catalog from './views/catalog.mjs';import * as materials from './views/materials.mjs';import * as settings from './views/settings.mjs';
-const routes={hoje:['Hoje',today,'◈'],clientes:['Clientes',clients,'◎'],pipeline:['Pipeline',pipeline,'▥'],orcamentos:['Orçamentos',quotes],tarefas:['Tarefas',tasks,'☑'],catalogo:['Catálogo',catalog,'▧'],filamentos:['Filamentos',materials,'◉'],definicoes:['Definições',settings,'⚙']};
+const routes={hoje:['Hoje',today,'◈'],clientes:['Clientes',clients,'◎'],encomendas:['Encomendas',ordersList],pipeline:['Pipeline',pipeline,'▥'],orcamentos:['Orçamentos',quotes],tarefas:['Tarefas',tasks,'☑'],catalogo:['Catálogo',catalog,'▧'],filamentos:['Filamentos',materials,'◉'],definicoes:['Definições',settings,'⚙']};
 const safeStorage=key=>({getItem:name=>window[key].getItem(name),setItem:(name,value)=>window[key].setItem(name,value),removeItem:name=>window[key].removeItem(name)});
 const store=createStore({storage:safeStorage('localStorage'),sessionStorage:safeStorage('sessionStorage')});let loaded=store.load();if(loaded.ok)loaded=store.addTaskExamples();const app=document.querySelector('#app');let toastTimer;
 function announce(message){const node=document.querySelector('#announcement');node.replaceChildren(icon('check'),el('span',{},message));reveal(node,'toast');clearTimeout(toastTimer);toastTimer=setTimeout(()=>node.replaceChildren(),5000);}
