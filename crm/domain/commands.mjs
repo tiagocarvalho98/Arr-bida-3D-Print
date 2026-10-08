@@ -1,4 +1,4 @@
-import {requireThat,text,validateState,TASK_STATES,dateValid} from './model.mjs';
+import {requireThat,text,validateState,TASK_STATES,ORDER_STATES,dateValid} from './model.mjs';
 import {inventoryCommand} from './inventory.mjs';
 import {validateConfiguration} from '../../scripts/products.mjs';
 export function transitionOptions(order){return ({new:order.pricingMode==='known'?['quote','approval','cancelled']:['quote','cancelled'],quote:['approval','cancelled'],approval:['production','cancelled'],production:['ready','cancelled'],ready:['delivered','cancelled'],delivered:[],cancelled:[]})[order.status]||[];}
@@ -38,7 +38,7 @@ export function applyCommand(state,command){
     }else if(c.type==='task.transition'){
       const task=s.tasks.find(t=>t.id===p.id);requireThat(task&&Object.hasOwn(TASK_STATES,p.status),'Estado de tarefa inválido.');task.status=p.status;
     }else throw new Error('Operação desconhecida.');
-    s.revision++;s.processedCommands.push(c.id);s.history.push({id:`history-${c.id}`,entityId,actorId:c.actorId,at:c.at,description:({ 'client.save':'Cliente guardado','order.save':'Encomenda guardada','order.approveArt':'Arte aprovada','order.transition':`Etapa alterada para ${p.status}`,'task.save':'Tarefa guardada','task.transition':`Tarefa: ${p.status}`,'lot.add':'Lote recebido','job.start':'Material reservado e trabalho iniciado','job.confirmConsumption':'Consumo real confirmado','job.cancel':'Trabalho cancelado; reservas libertadas','job.reprint':'Reimpressão criada'})[c.type]});
+    s.revision++;s.processedCommands.push(c.id);s.history.push({id:`history-${c.id}`,entityId,actorId:c.actorId,at:c.at,description:({ 'client.save':'Cliente guardado','order.save':'Encomenda guardada','order.approveArt':'Arte aprovada','order.transition':`Etapa alterada para ${ORDER_STATES[p.status]}`,'task.save':'Tarefa guardada','task.transition':`Tarefa «${s.tasks.find(t=>t.id===p.id)?.title}»: ${TASK_STATES[p.status]}`,'lot.add':'Lote recebido','job.start':'Material reservado e trabalho iniciado','job.confirmConsumption':'Consumo real confirmado','job.cancel':'Trabalho cancelado; reservas libertadas','job.reprint':'Reimpressão criada'})[c.type]});
     const valid=validateState(s);requireThat(valid.ok,valid.message);return {ok:true,state:s};
   }catch(e){return {ok:false,code:'invalid',message:e.message};}
 }

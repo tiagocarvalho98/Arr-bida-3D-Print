@@ -1,6 +1,6 @@
 import {validateConfiguration} from '../../scripts/products.mjs';
 export const ORDER_STATES={new:'Novo pedido',quote:'Orçamento',approval:'Aprovação',production:'Produção',ready:'Pronto',delivered:'Entregue',cancelled:'Cancelado'};
-export const TASK_STATES={pending:'Pendente',active:'Em curso',done:'Concluída'};
+export const TASK_STATES={pending:'Em pedido',active:'Em curso',done:'Concluída'};
 export const JOB_STATES={pending:'Por iniciar',active:'Em produção',completed:'Concluído',failed:'Falhou',cancelled:'Cancelado'};
 export function requireThat(condition,message){if(!condition)throw new Error(message);}
 export function text(value,max=500){return String(value??'').trim().slice(0,max);}
@@ -17,7 +17,7 @@ export function validateState(s){
     }
     const has=(key,id)=>s[key].some(x=>x.id===id);
     const owner=id=>id===null||has('users',id);
-    requireThat(s.users.length===1&&s.users[0].id==='user-demo','Conta de demonstração inválida.');
+    requireThat(s.users.some(u=>u.id==='user-demo')&&s.users.every(u=>typeof u.name==='string'&&u.name.trim()&&u.role==='admin'),'Conta de demonstração inválida.');
     for(const c of s.clients)requireThat(typeof c.name==='string'&&c.name.trim()&&['business','person'].includes(c.type),'Cliente inválido.');
     for(const o of s.orders){
       requireThat(typeof o.artRequired==='boolean'&&typeof o.artApproved==='boolean','Estado de aprovação inválido.');
