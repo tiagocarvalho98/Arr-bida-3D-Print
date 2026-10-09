@@ -14,3 +14,8 @@ Preços ilustrativos do CRM em domain/catalog-pricing.mjs: Produto 1 sem preço;
 40 testes Node passaram, incluindo 8 de orçamento (cálculos, stock inalterado, aprovação obrigatória, avanço, preços fixos/mistos, valores inválidos, snapshots e edição de metadados). Browser em sessão isolada: 100 g a 20 €/kg + 90 min a 10 €/h = 2 € material + 15 € tempo; valor final 45 €. Aprovar avançou para aprovação de arte, sem movimentos adicionais. Persistência após reload, ausência da opção Orçamento para produto fixo, pop-up sem overflow a 390 px e consulta sem campos editáveis verificados. Revisão independente identificou comparação de IDs nas linhas; corrigida e coberta por teste.
 
 Capturas quotation-approval.png e quotation-mobile.png. Dados continuam mock locais; sem autenticação real nem sincronização entre browsers.
+
+## Vários filamentos — 2026-10-09
+O pop-up permite adicionar/remover linhas de filamento, com lote e gramas por linha. Custos individuais são somados no total de materiais. Tempo e valor final continuam por orçamento. Não aceita lotes duplicados, linhas vazias ou quantidades superiores ao disponível. Orçamentos antigos com um só material continuam válidos, sem migração destrutiva. Detalhe do projeto e consulta informativa mostram a discriminação dos materiais.
+
+43 testes Node passaram. Browser local isolado: adicionar dois lotes (100 g PLA Preto e 50 g PLA Branco), custo total 3,10 €, enviar/reabrir/recarregar, remover e voltar a adicionar linha; duas linhas persistidas, sem movimentos de stock adicionais; formulário em 390 px sem overflow. Captura multiple-filaments-mobile.png.

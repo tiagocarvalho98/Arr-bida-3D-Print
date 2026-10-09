@@ -41,3 +41,19 @@ test('metadata-only edits preserve pending and approved estimates on legacy line
  r=run(r.state,'quote.approve',{id:o.id});o=r.state.orders[3];
  const approvedEdit=run(r.state,'order.save',{...o,notes:'Updated approved note'});assert.equal(approvedEdit.ok,true);assert.deepEqual(approvedEdit.state.orders[3].quotation,o.quotation);
 });
+test('multiple filaments sum their own snapshots and preserve stock',()=>{
+ const s=createDemoState();const r=run(s,'quote.submit',{...input,materials:[{lotId:'lot-1',grams:100},{lotId:'lot-2',grams:50}]});
+ assert.equal(r.ok,true);const q=r.state.orders[3].quotation;
+ assert.equal(q.materials.length,2);assert.equal(q.materialMilliEuro,3100);assert.equal(q.materials[1].materialMilliEuro,1100);
+ assert.deepEqual(r.state.movements,s.movements);assert.deepEqual(r.state.reservations,s.reservations);
+ assert.equal(validateState(JSON.parse(JSON.stringify(r.state))).ok,true);
+});
+test('empty, duplicate and invalid material rows cannot bypass stock checks',()=>{
+ const s=createDemoState();for(const materials of [[],null,[{lotId:'lot-1',grams:600},{lotId:'lot-1',grams:600}],[{lotId:'lot-1',grams:100},{lotId:'lot-2',grams:10000}],[null]])assert.equal(run(s,'quote.submit',{...input,materials}).ok,false);
+});
+test('legacy single-filament saved quotations still load',()=>{
+ const r=run(createDemoState(),'quote.submit',input),q=r.state.orders[3].quotation;
+ Object.assign(q,q.materials[0]);delete q.materials;
+ assert.equal(validateState(r.state).ok,true);
+ q.materialMilliEuro++;assert.equal(validateState(r.state).ok,false);
+});
